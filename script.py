@@ -30,7 +30,7 @@ $JT&yd$     $$$$$$$$$$$$$$$$.    $    $$    $   .$$$$$$$$$$$$$$$$     $by&TL$
                                  `$        $'
                                   `$$$$$$$$'
 
-                         strawpoll.me voting bot v1.0
+                         strawpoll.me voting bot v1.1
                                         - by Milkdrop
 
 	If you don't have enough proxies you can fill the file proxies.txt
@@ -38,42 +38,16 @@ $JT&yd$     $$$$$$$$$$$$$$$$.    $    $$    $   .$$$$$$$$$$$$$$$$     $by&TL$
 	for example.
 """
 
-def vote (url, checkboxID, headers, proxy = None):
-	if (proxy == None):
-		proxies = {}
-	else:
-		proxies = {"https": proxy}
-
-	try:
-		# Connect
-		page = requests.get (url, headers = headers, proxies = proxies, timeout = 10).text
-
-		# Get Security Tokens
-		secToken1 = page [page.find ("security-token"):]
-		secToken1 = secToken1 [secToken1.find ("value=\"") + len ("value=\""):]
-		secToken1 = secToken1 [:secToken1.find ("\"")]
-
-		secToken2 = page [page.find ("field-authenticity-token"):]
-		secToken2 = secToken2 [secToken2.find ("name=\"") + len ("name=\""):]
-		secToken2 = secToken2 [:secToken2.find ("\"")]
-
-		page = requests.post (url, data = {"security-token": secToken1, secToken2: "", "options": checkboxID}, headers = headers, proxies = proxies, timeout = 10).text
-		successString = "\"success\":\"success\""
-		if (page.find (successString) != -1):
-			print ("Vote Successful ({})".format (secToken1))
-		else:
-			print ("Vote Unsuccessful ({})".format (secToken1))
-	except requests.exceptions.ProxyError:
-		print ("Vote Unsuccessful (Invalid Proxy)")
-	except requests.exceptions.ConnectionError:
-		print ("Vote Unsuccessful (Invalid Proxy - Connection Error)")
-
 def prepare (args, motd):
 	print (motd)
 
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36'}
 	url = "https://www.strawpoll.me/" + args.id
-	opt = args.option
+	try:
+		opt = int (args.option)
+	except:
+		print ("Invalid option: '{}'. Must be a number: 1 for 1st option, 2 for 2nd, ...".format (args.option))
+		exit (1)
 
 	if (args.f == None):
 		freq = 0.2
@@ -102,14 +76,15 @@ def prepare (args, motd):
 	page = requests.get (url, headers = headers).text
 
 	# Get Checkbox ID
-	ind = page.find ("field-options-" + opt)
-	if (ind == -1):
-		print ("Couldn't find option " + opt)
-		exit (1)
-
+	ind = page.find ("\"field-options-")
 	checkboxID = page [ind:]
 	checkboxID = checkboxID [checkboxID.find ("value=\"") + len ("value=\""):]
 	checkboxID = checkboxID [:checkboxID.find ("\"")]
+	checkboxID = str (int (checkboxID) + opt - 1)
+
+	if (page.find (checkboxID) == -1):
+		print ("Couldn't find option {}".format (opt))
+		exit (1)
 
 	print ("Checkbox ID: " + checkboxID)
 	print ("Max threads: " + str (maxthreads))
@@ -134,5 +109,38 @@ def prepare (args, motd):
 			time.sleep (0.1)
 
 		time.sleep (freq)
+
+def vote (url, checkboxID, headers, proxy = None):
+	if (proxy == None):
+		proxies = {}
+	else:
+		proxies = {"https": proxy}
+
+	try:
+		# Connect
+		page = requests.get (url, headers = headers, proxies = proxies, timeout = 10).text
+
+		# Get Security Tokens
+		secToken1 = page [page.find ("security-token"):]
+		secToken1 = secToken1 [secToken1.find ("value=\"") + len ("value=\""):]
+		secToken1 = secToken1 [:secToken1.find ("\"")]
+
+		secToken2 = page [page.find ("field-authenticity-token"):]
+		secToken2 = secToken2 [secToken2.find ("name=\"") + len ("name=\""):]
+		secToken2 = secToken2 [:secToken2.find ("\"")]
+
+		page = requests.post (url, data = {"security-token": secToken1, secToken2: "", "options": checkboxID}, headers = headers, proxies = proxies, timeout = 10).text
+		successString = "\"success\":\"success\""
+		if (page.find (successString) != -1):
+			print ("Vote Successful ({})".format (secToken1))
+		else:
+			if (proxy == None):
+				print ("Vote Unsuccessful (The poll may be doing an IP Check. Use option -p)")
+			else:
+				print ("Vote Unsuccessful ({})".format (secToken1))
+	except requests.exceptions.ProxyError:
+		print ("Vote Unsuccessful (Invalid Proxy)")
+	except requests.exceptions.ConnectionError:
+		print ("Vote Unsuccessful (Invalid Proxy - Connection Error)")
 
 prepare (args, motd)
