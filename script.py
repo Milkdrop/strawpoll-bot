@@ -30,7 +30,7 @@ $JT&yd$     $$$$$$$$$$$$$$$$.    $    $$    $   .$$$$$$$$$$$$$$$$     $by&TL$
                                  `$        $'
                                   `$$$$$$$$'
 
-                         strawpoll.me voting bot v1.1
+                         strawpoll.me voting bot v1.2
                                         - by Milkdrop
 
 	If you don't have enough proxies you can fill the file proxies.txt
@@ -77,6 +77,7 @@ def prepare (args, motd):
 
 	# Get Checkbox ID
 	ind = page.find ("\"field-options-")
+
 	checkboxID = page [ind:]
 	checkboxID = checkboxID [checkboxID.find ("value=\"") + len ("value=\""):]
 	checkboxID = checkboxID [:checkboxID.find ("\"")]
@@ -129,7 +130,12 @@ def vote (url, checkboxID, headers, proxy = None):
 		secToken2 = secToken2 [secToken2.find ("name=\"") + len ("name=\""):]
 		secToken2 = secToken2 [:secToken2.find ("\"")]
 
-		page = requests.post (url, data = {"security-token": secToken1, secToken2: "", "options": checkboxID}, headers = headers, proxies = proxies, timeout = 10).text
+		fieldName = page [page.find ("\"field-options-"):]
+		fieldName = fieldName [fieldName.find ("name=\"") + len ("name=\""):]
+		fieldName = fieldName [:fieldName.find ("\"")]
+
+		page = requests.post (url, data = {"security-token": secToken1, secToken2: "", fieldName: checkboxID}, headers = headers, proxies = proxies, timeout = 10).text
+
 		successString = "\"success\":\"success\""
 		if (page.find (successString) != -1):
 			print ("Vote Successful ({})".format (secToken1))
@@ -138,6 +144,7 @@ def vote (url, checkboxID, headers, proxy = None):
 				print ("Vote Unsuccessful (The poll may be doing an IP Check. Use option -p)")
 			else:
 				print ("Vote Unsuccessful ({})".format (secToken1))
+
 	except requests.exceptions.ProxyError:
 		print ("Vote Unsuccessful (Invalid Proxy)")
 	except requests.exceptions.ConnectionError:
