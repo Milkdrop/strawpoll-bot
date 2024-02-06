@@ -1,5 +1,7 @@
 # Strawpoll Bot
 
+## This script was written only for strawpoll.me back when it was still active. It will NOT work on strawpoll.com!
+
 ![](https://img.shields.io/badge/license-GPLv2-blue)
 
 ## Requirements:
